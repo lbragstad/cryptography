@@ -46,7 +46,9 @@ class Fernet(object):
         return base64.urlsafe_b64encode(os.urandom(32))
 
     def encrypt(self, data):
-        current_time = int(time.time())
+        # NOTE(lbragstad): The current time is an integer representation of
+        # microseconds since epoch.
+        current_time = int(time.time() * 1e6)
         iv = os.urandom(16)
         return self._encrypt_from_parts(data, current_time, iv)
 
@@ -74,7 +76,9 @@ class Fernet(object):
         if not isinstance(token, bytes):
             raise TypeError("token must be bytes.")
 
-        current_time = int(time.time())
+        # NOTE(lbragstad): A floating point representation of the number of
+        # seconds since epoch.
+        current_time = time.time()
 
         try:
             data = base64.urlsafe_b64decode(token)
@@ -85,7 +89,7 @@ class Fernet(object):
             raise InvalidToken
 
         try:
-            timestamp, = struct.unpack(">Q", data[1:9])
+            timestamp = struct.unpack(">Q", data[1:9])[0] / 1e6
         except struct.error:
             raise InvalidToken
         if ttl is not None:
